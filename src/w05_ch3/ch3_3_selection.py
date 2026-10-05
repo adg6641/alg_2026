@@ -26,6 +26,10 @@ def selection_range(array, left, right, rank):
     # Selection은 이 뒤에 답이 있는 한쪽만 남기는 점이 Quick Sort와 다릅니다.
     pivot_index = qs.partition_random(array, left, right)
 
+    # pivot의 배열 전체 index가 아니라, 현재 범위 안에서 몇 번째인지 계산합니다.
+    pivot_rank = pivot_index - left + 1
+    vis.show_pivot_rank(pivot_index, rank)
+
 
 if __name__ == "__main__":
     while va.running():
