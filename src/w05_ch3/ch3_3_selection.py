@@ -40,6 +40,12 @@ def selection_range(array, left, right, rank):
         vis.keep_left(pivot_index, rank)
         return selection_range(array, left, pivot_index - 1, rank)
 
+    # pivot과 그 왼쪽에는 pivot_rank개의 작은 값이 있으므로,
+    # 오른쪽 범위에서는 그 수를 뺀 순위를 다시 찾습니다.
+    next_rank = rank - pivot_rank
+    vis.keep_right(pivot_index, next_rank)
+    return selection_range(array, pivot_index + 1, right, next_rank)
+
 
 if __name__ == "__main__":
     while va.running():
