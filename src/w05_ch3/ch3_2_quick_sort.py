@@ -11,7 +11,9 @@ INSERTION_SORT_THRESHOLD = 4
 # 이 수업에서는 40~60개 시각화 데이터에서도 ninther가 한 번 나타나도록 40으로 정합니다.
 NINTHER_THRESHOLD = 40
 
-vis = va.visualizer("quick_sort")
+# 다른 알고리즘이 partition 함수를 import할 수 있습니다.
+# import만 할 때는 pygame 창을 만들지 않고, 호출하는 쪽이 필요한 visualizer를 연결합니다.
+vis = va.DummyVisualizer()
 
 
 def quick_sort(array):
@@ -232,11 +234,13 @@ def insertion_sort(array, left, right):
     vis.finish_insertion(left, right)
 
 
-while va.running():
-    data = va.next_data(__file__, data_file=DATA_FILE)
-    array = list(data.array)
+if __name__ == "__main__":
+    vis = va.visualizer("quick_sort")
+    while va.running():
+        data = va.next_data(__file__, data_file=DATA_FILE)
+        array = list(data.array)
 
-    vis.setup(data)
-    print("퀵 정렬 전:", array)
-    print("퀵 정렬 후:", quick_sort(array))
-    vis.wait()
+        vis.setup(data)
+        print("퀵 정렬 전:", array)
+        print("퀵 정렬 후:", quick_sort(array))
+        vis.wait()
