@@ -22,6 +22,10 @@ def selection_range(array, left, right, rank):
     # 재귀 depth마다 현재 남은 범위와, 그 안에서 찾을 상대 순위를 기록합니다.
     vis.push(left, right, rank)
 
+    # Quick Sort와 같은 방식으로 pivot을 골라 현재 범위를 양쪽으로 나눕니다.
+    # Selection은 이 뒤에 답이 있는 한쪽만 남기는 점이 Quick Sort와 다릅니다.
+    pivot_index = qs.partition_random(array, left, right)
+
 
 if __name__ == "__main__":
     while va.running():
