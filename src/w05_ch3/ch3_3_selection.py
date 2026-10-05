@@ -30,6 +30,11 @@ def selection_range(array, left, right, rank):
     pivot_rank = pivot_index - left + 1
     vis.show_pivot_rank(pivot_index, rank)
 
+    # 현재 범위에서 pivot이 찾는 순위와 같으면, 이 값이 바로 답입니다.
+    if rank == pivot_rank:
+        vis.found(pivot_index, rank)
+        return array[pivot_index]
+
 
 if __name__ == "__main__":
     while va.running():
