@@ -51,8 +51,14 @@ if __name__ == "__main__":
     while va.running():
         data = va.next_data(__file__, data_file=DATA_FILE)
         array = list(data.array)
+        original = list(array)
 
+        # Quick Sort 모듈의 partition도 현재 Selection visualizer에 그리도록 연결합니다.
+        qs.vis = vis
         vis.setup(data)
         print("선택 전:", array)
         print(f"찾을 순위: {data.n}번째")
+        value = selection(array, data.n)
+        print(f"{data.n}번째 작은 값:", value)
+        print("정렬했을 때의 확인 값:", sorted(original)[data.n - 1])
         vis.wait()
