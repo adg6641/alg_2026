@@ -17,6 +17,7 @@ from .visualizers.array import (
     RadixLsdVisualizer,
     RadixMsdWordsVisualizer,
     SequentialSearchVisualizer,
+    SelectionVisualizer,
     SelectionSortVisualizer,
     ShellSortVisualizer,
     VerticalBubbleSortVisualizer,
@@ -55,6 +56,8 @@ def visualizer(name, enabled=True):
         return QuickSortVisualizer("Quick Sort")
     if name == "quick_sort_partition":
         return QuickSortVisualizer("Quick Sort: Partition").set_fine_sections(True)
+    if name == "selection":
+        return SelectionVisualizer("Selection")
     if name == "binary_tree_array":
         return BinaryTreeArrayVisualizer("Binary Tree in Array")
     if name == "heap_sort":
@@ -95,6 +98,7 @@ __all__ = [
     "RadixLsdVisualizer",
     "RadixMsdWordsVisualizer",
     "SequentialSearchVisualizer",
+    "SelectionVisualizer",
     "SelectionSortVisualizer",
     "ShellSortVisualizer",
     "VerticalBubbleSortVisualizer",

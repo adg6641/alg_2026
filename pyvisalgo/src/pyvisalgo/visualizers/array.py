@@ -4955,7 +4955,13 @@ class QuickSortVisualizer(BaseVisualizer):
         self.fine_sections = enabled
         return self
 
-    def setup(self, data):
+    def setup(
+        self,
+        data,
+        phase="퀵 정렬",
+        action="배열을 준비한다.",
+        detail="pivot을 기준으로 작은 값은 왼쪽, 큰 값은 오른쪽으로 나눈다.",
+    ):
         self.set_data_info(data)
         self.array = list(data.array)
         self.stack = []
@@ -4992,9 +4998,9 @@ class QuickSortVisualizer(BaseVisualizer):
         self.fixed = set()
         self.compare_count = 0
         self.swap_count = 0
-        self.msg_phase("퀵 정렬")
-        self.msg_action("배열을 준비한다.")
-        self.msg_detail("pivot을 기준으로 작은 값은 왼쪽, 큰 값은 오른쪽으로 나눈다.")
+        self.msg_phase(phase)
+        self.msg_action(action)
+        self.msg_detail(detail)
         self._update_stats()
         self.wait(700)
 
@@ -5524,21 +5530,23 @@ class QuickSortVisualizer(BaseVisualizer):
             return
         _, start_x, _, box_width, _, gap = self._layout_metrics()
         row_height = 34
+        row_step = getattr(self, "stack_row_step", 42)
+        last_row_extra = getattr(self, "stack_last_row_extra", 22)
         visible_frames = self.stack[-8:]
         first_level = len(self.stack) - len(visible_frames)
         visible_last = len(visible_frames) - 1
         active_level = len(self.stack) - 1
         for visible_level, frame in enumerate(visible_frames):
             level = first_level + visible_level
-            top = 300 + visible_level * 42
+            top = 300 + visible_level * row_step
             if visible_level == visible_last and visible_level > 0:
-                top += 22
+                top += last_row_extra
             row_x_offset = 0
             if level == self.stack_anim_level:
                 if self.stack_anim_kind == "push":
-                    top -= 42 * (1.0 - self.stack_anim_progress)
+                    top -= row_step * (1.0 - self.stack_anim_progress)
                 elif self.stack_anim_kind == "pop":
-                    top -= 42 * self.stack_anim_progress
+                    top -= row_step * self.stack_anim_progress
             left = frame["left"]
             right = frame["right"]
             pivot = frame["pivot"]
@@ -5830,6 +5838,174 @@ class QuickSortVisualizer(BaseVisualizer):
 
     def _update_stats(self):
         self.msg_stats(f"비교 {self.compare_count}회\n교환 {self.swap_count}회")
+
+
+class SelectionVisualizer(QuickSortVisualizer):
+    """Quick Sort의 partition 시각화를 재사용하는 Selection visualizer."""
+
+    def __init__(self, title="Selection", **kwargs):
+        super().__init__(title, **kwargs)
+        self.answer_index = None
+        self.discarded_ranges = []
+        # 각 탐색 단계가 찾는 상대 순위를 충분히 읽을 수 있도록 stack 행을 넓힙니다.
+        self.stack_row_step = 64
+        self.stack_last_row_extra = 0
+
+    def setup(self, data):
+        # 부모 setup()은 준비 화면을 그리며 잠시 대기합니다.
+        # 그 전에 Selection 전용 상태를 지워야 다음 데이터 첫 화면에 이전 탐색 흔적이 남지 않습니다.
+        self.answer_index = None
+        self.discarded_ranges = []
+        super().setup(
+            data,
+            phase="선택",
+            action="찾을 순위와 배열을 준비한다.",
+            detail="partition 뒤 k번째 값이 어느 쪽에 있는지 판단해 한쪽만 계속 탐색한다.",
+        )
+
+    def push(self, left, right, rank):
+        """left..right 범위에서 rank번째 작은 값을 찾는 단계를 쌓는다."""
+        super().push(left, right)
+        self.stack[-1]["rank"] = rank
+        self.stack[-1]["branch"] = None
+        self.msg_action(f"부분 배열 #{left}..#{right} 에서 {rank}번째 작은 값을 찾는다.")
+        self.msg_detail("pivot을 기준으로 나눈 뒤, 답이 있는 한쪽 부분 배열만 남긴다.")
+        self._update_stats()
+        self.wait(500)
+        self.section_end()
+
+    def show_pivot_rank(self, pivot_index, rank):
+        """현재 범위 안에서 pivot이 몇 번째인지와 찾는 rank를 비교해 표시한다."""
+        if not self.stack:
+            return
+        frame = self.stack[-1]
+        pivot_rank = pivot_index - frame["left"] + 1
+        frame["pivot_rank"] = pivot_rank
+        self.msg_action(f"pivot #{pivot_index} 은 이 범위에서 {pivot_rank}번째 작은 값이다.")
+        if rank == pivot_rank:
+            self.msg_detail(f"찾는 {rank}번째와 같으므로 pivot이 답이다.")
+        elif rank < pivot_rank:
+            self.msg_detail(f"찾는 {rank}번째는 pivot 왼쪽 부분 배열에 있다.")
+        else:
+            self.msg_detail(f"찾는 {rank}번째는 pivot 오른쪽 부분 배열에 있다.")
+        self._update_stats()
+        self.wait(800)
+        self.section_end()
+
+    def keep_left(self, pivot_index, rank):
+        """pivot 오른쪽을 제외하고 왼쪽 범위에서 같은 rank를 계속 찾는다."""
+        if not self.stack:
+            return
+        frame = self.stack[-1]
+        frame["branch"] = "left"
+        frame["next_rank"] = rank
+        if pivot_index + 1 <= frame["right"]:
+            self.discarded_ranges.append((pivot_index + 1, frame["right"]))
+        self.msg_action(f"왼쪽 #{frame['left']}..#{pivot_index - 1} 범위만 계속 탐색한다.")
+        self.msg_detail(f"오른쪽 원소와 pivot은 모두 {rank}번째 답보다 크므로 제외한다.")
+        self._update_stats()
+        self.wait(800)
+        self.section_end()
+
+    def keep_right(self, pivot_index, rank):
+        """pivot 왼쪽을 제외하고 오른쪽 범위에서 보정한 rank를 계속 찾는다."""
+        if not self.stack:
+            return
+        frame = self.stack[-1]
+        frame["branch"] = "right"
+        frame["next_rank"] = rank
+        if frame["left"] <= pivot_index - 1:
+            self.discarded_ranges.append((frame["left"], pivot_index - 1))
+        self.msg_action(f"오른쪽 #{pivot_index + 1}..#{frame['right']} 범위만 계속 탐색한다.")
+        self.msg_detail(f"pivot과 왼쪽 원소를 뺀 {rank}번째 작은 값을 오른쪽에서 찾는다.")
+        self._update_stats()
+        self.wait(800)
+        self.section_end()
+
+    def found(self, index, rank):
+        """현재 pivot이 찾던 rank번째 원소임을 표시하고 탐색을 끝낸다."""
+        self.answer_index = index
+        self.fixed.add(index)
+        self.active_range = (index, index)
+        self.pivot_index = index
+        self.p_index = None
+        self.q_index = None
+        self.compare_index = None
+        self.scan_index = None
+        self.scan_direction = None
+        self.msg_phase("완료")
+        self.msg_action(f"#{index}({self.array[index]}) 이 찾던 {rank}번째 작은 값이다.")
+        self.msg_detail("양쪽 부분 배열을 모두 정렬하지 않아도, 필요한 원소 하나를 찾을 수 있다.")
+        self._update_stats()
+        self.wait(1200)
+        self.section_end()
+
+    def draw_content(self):
+        self.text(self.title, 70, 55, 46, colors.TEXT, True)
+        self.text("partition으로 범위를 줄이며 k번째 작은 값을 찾는다.", 72, 115, 26, colors.TEXT_MUTED)
+        self._draw_array()
+        self._draw_selection_discarded_ranges()
+        self._draw_selection_answer()
+        self._draw_stack()
+        self._draw_selection_ranks()
+        self._draw_legend()
+        self._draw_selection_legend()
+
+    def _draw_selection_ranks(self):
+        if not self.stack:
+            return
+
+        row_step = self.stack_row_step
+        visible_frames = self.stack[-8:]
+        first_level = len(self.stack) - len(visible_frames)
+        visible_last = len(visible_frames) - 1
+        for visible_level, frame in enumerate(visible_frames):
+            rank = frame.get("rank")
+            if rank is None:
+                continue
+            level = first_level + visible_level
+            top = 300 + visible_level * row_step
+            if visible_level == len(visible_frames) - 1 and visible_level > 0:
+                top += self.stack_last_row_extra
+            self.text(
+                f"depth {level + 1}: #{frame['left']} ~ #{frame['right']}에서 {rank}번째",
+                150,
+                top - 22,
+                16,
+                colors.YELLOW,
+                True,
+            )
+
+    def _draw_selection_discarded_ranges(self):
+        if not self.discarded_ranges:
+            return
+        _, start_x, top, box_width, box_height, gap = self._layout_metrics()
+        for left, right in self.discarded_ranges:
+            if right < left:
+                continue
+            x = start_x + left * (box_width + gap) - 4
+            width = (right - left + 1) * box_width + (right - left) * gap + 8
+            rect = self.view.rect(x, top - 4, width, box_height + 8)
+            overlay = pygame.Surface((rect[2], rect[3]), pygame.SRCALPHA)
+            overlay.fill((13, 17, 22, 150))
+            self.screen.blit(overlay, (rect[0], rect[1]))
+            pygame.draw.rect(self.screen, colors.TEXT_MUTED, rect, width=self.view.length(2), border_radius=self.view.length(6))
+            self.centered_text("탐색 제외", x + width / 2, top + box_height + 42, 16, colors.TEXT_MUTED, True)
+
+    def _draw_selection_legend(self):
+        self.rect(1000, 144, 30, 20, (21, 25, 31), colors.TEXT_MUTED, 4)
+        self.text("탐색 제외", 1042, 140, 21, colors.TEXT_MUTED)
+        self.rect(1220, 144, 30, 20, (35, 72, 52), colors.YELLOW, 4)
+        self.text("찾은 값", 1262, 140, 21, colors.TEXT_MUTED)
+
+    def _draw_selection_answer(self):
+        if self.answer_index is None:
+            return
+        _, start_x, top, box_width, box_height, gap = self._layout_metrics()
+        x = start_x + self.answer_index * (box_width + gap)
+        rect = self.view.rect(x - 6, top - 6, box_width + 12, box_height + 12)
+        pygame.draw.rect(self.screen, colors.YELLOW, rect, width=self.view.length(3), border_radius=self.view.length(8))
+        self.centered_text("찾은 값", x + box_width / 2, top - 26, 17, colors.YELLOW, True)
 
 
 class VerticalBubbleSortVisualizer(BubbleSortVisualizer):
