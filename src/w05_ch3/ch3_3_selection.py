@@ -17,6 +17,12 @@ def selection(array, rank):
     return selection_range(array, 0, len(array) - 1, rank)
 
 
+def selection_range(array, left, right, rank):
+    """array[left..right]에서 rank번째로 작은 값을 찾는다. right도 포함한다."""
+    # 재귀 depth마다 현재 남은 범위와, 그 안에서 찾을 상대 순위를 기록합니다.
+    vis.push(left, right, rank)
+
+
 if __name__ == "__main__":
     while va.running():
         data = va.next_data(__file__, data_file=DATA_FILE)
