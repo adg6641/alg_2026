@@ -35,6 +35,11 @@ def selection_range(array, left, right, rank):
         vis.found(pivot_index, rank)
         return array[pivot_index]
 
+    # 찾는 순위가 pivot보다 앞이면, pivot 오른쪽은 보지 않고 왼쪽에서 같은 순위를 찾습니다.
+    if rank < pivot_rank:
+        vis.keep_left(pivot_index, rank)
+        return selection_range(array, left, pivot_index - 1, rank)
+
 
 if __name__ == "__main__":
     while va.running():
