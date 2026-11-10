@@ -51,7 +51,7 @@ print()
 print("-- pygame window demo is prepared below --")
 
 
-RUN_PYGAME_DEMO = False
+RUN_PYGAME_DEMO = True
 
 
 def run_pygame_window():
