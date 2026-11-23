@@ -53,6 +53,7 @@ def chained_matrix_mult(sizes, vis=None):
         if vis.stopped():
             return None
 
+#기말고사에 나옴
     # 짧은 구간의 결과를 재사용하며 전체 행렬 길이까지 계산합니다.
     for length in range(2, count + 1):
         for left in range(count - length + 1):
